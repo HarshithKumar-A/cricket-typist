@@ -356,7 +356,7 @@
               <span class="text-[8px] font-extrabold text-cyan-200 tracking-tighter">PAUSE</span>
             </div>
             <!-- Ideal Sweet Spot Zone (Width scales dynamically with Typing Power!) -->
-            <div id="timing-sweet-zone" class="absolute top-0 bottom-0 bg-emerald-500/35 border-x-2 border-emerald-400 z-10 flex items-center justify-center transition-all duration-150" style="left: 74%; width: 4%;">
+            <div id="timing-sweet-zone" class="absolute top-0 bottom-0 bg-emerald-500/35 border-x-2 border-emerald-400 z-10 flex items-center justify-center transition-all duration-150" style="left: 58%; width: 22%;">
               <span class="text-[8px] font-black text-emerald-200 tracking-tighter">SWEET</span>
             </div>
             <!-- Moving Ball Progress Cursor -->
@@ -1175,11 +1175,11 @@
         this.powerTierBadgeEl.textContent = badgeText;
         this.powerTierBadgeEl.className = `text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${badgeClass}`;
 
-        // Dynamic sweet spot width scaling on the timing bar
-        const sweetWidth = 4 + power * 14; // Scales from 4% up to 18% width
-        const sweetLeft = 74 - (sweetWidth - 4) * 0.5;
+        // Dynamic sweet spot width scaling on the timing bar (generous window so typing is the primary challenge)
+        const sweetWidth = 22 + power * 20; // Scales from 22% up to 42% width
+        const sweetLeft = 72 - sweetWidth * 0.5;
         this.sweetZoneEl.style.width = `${sweetWidth}%`;
-        this.sweetZoneEl.style.left = `${Math.max(50, sweetLeft)}%`;
+        this.sweetZoneEl.style.left = `${Math.max(36, sweetLeft)}%`;
       }
     }
 
@@ -2767,32 +2767,60 @@
 
         if (this.swingState === 'idle') {
           const t = performance.now() * 0.004;
-          const backliftAngle = 0.25 + readinessRatio * 0.55 + Math.sin(t) * 0.05;
-          this.shoulderPivot.rotation.x = THREE.MathUtils.lerp(this.shoulderPivot.rotation.x, -backliftAngle, dt * 8);
-          this.shoulderPivot.rotation.z = THREE.MathUtils.lerp(this.shoulderPivot.rotation.z, 0.15, dt * 8);
-          this.batPivot.rotation.x = THREE.MathUtils.lerp(this.batPivot.rotation.x, -0.25 - readinessRatio * 0.35, dt * 8);
+          // In the batsman's side-on stance (rotation.y = Math.PI * 0.42), local +X rotates the bat back toward the keeper (backlift)
+          // and local -X swings the bat forward through the line toward the bowler (-Z world).
+          const backliftAngle = 0.22 + readinessRatio * 0.48 + Math.sin(t) * 0.04;
+          this.shoulderPivot.rotation.x = THREE.MathUtils.lerp(this.shoulderPivot.rotation.x, backliftAngle, dt * 8);
+          this.shoulderPivot.rotation.y = THREE.MathUtils.lerp(this.shoulderPivot.rotation.y, 0, dt * 8);
+          this.shoulderPivot.rotation.z = THREE.MathUtils.lerp(this.shoulderPivot.rotation.z, -0.12, dt * 8);
+          this.batPivot.rotation.x = THREE.MathUtils.lerp(this.batPivot.rotation.x, 0.22 + readinessRatio * 0.30, dt * 8);
+          this.batPivot.rotation.y = THREE.MathUtils.lerp(this.batPivot.rotation.y, 0, dt * 8);
+          this.batPivot.rotation.z = THREE.MathUtils.lerp(this.batPivot.rotation.z, 0, dt * 8);
           this.torso.rotation.x = THREE.MathUtils.lerp(this.torso.rotation.x, 0.08, dt * 8);
+          this.torso.rotation.y = THREE.MathUtils.lerp(this.torso.rotation.y, 0, dt * 8);
+          this.leftLeg.position.x = THREE.MathUtils.lerp(this.leftLeg.position.x, -0.095, dt * 8);
           this.leftLeg.position.z = THREE.MathUtils.lerp(this.leftLeg.position.z, 0.08, dt * 8);
         } else if (this.swingState === 'swinging') {
-          this.swingTimer += dt * 4.8;
+          this.swingTimer += dt * 5.2;
           const p = Math.min(1, this.swingTimer);
+          // Smooth ease-out curve for crisp downswing and follow-through toward the bowler
+          const easeP = 1 - Math.pow(1 - p, 2.2);
 
           if (this.activeShotId === 0) {
-            this.leftLeg.position.z = 0.24;
-            this.shoulderPivot.rotation.x = THREE.MathUtils.lerp(-0.4, 0.35, p);
-            this.batPivot.rotation.x = THREE.MathUtils.lerp(-0.3, 0.15, p);
-          } else if (this.activeShotId === 3 || this.activeShotId === 4) {
-            this.shoulderPivot.rotation.z = THREE.MathUtils.lerp(0.2, -1.35, p);
-            this.shoulderPivot.rotation.x = THREE.MathUtils.lerp(-0.5, 0.65, p);
-            this.batPivot.rotation.z = THREE.MathUtils.lerp(0, -0.8, p);
+            // Defend Block: stride forward toward bowler (-X local) and present vertical full face
+            this.leftLeg.position.x = THREE.MathUtils.lerp(-0.095, -0.26, easeP);
+            this.shoulderPivot.rotation.x = THREE.MathUtils.lerp(0.35, -0.42, easeP);
+            this.batPivot.rotation.x = THREE.MathUtils.lerp(0.25, -0.22, easeP);
+          } else if (this.activeShotId === 3) {
+            // Pull Shot: swivel torso & shoulders across toward leg-side (+X world) swinging toward incoming ball
+            this.leftLeg.position.x = THREE.MathUtils.lerp(-0.095, -0.18, easeP);
+            this.torso.rotation.y = THREE.MathUtils.lerp(0, -0.55, easeP);
+            this.shoulderPivot.rotation.x = THREE.MathUtils.lerp(0.55, -1.25, easeP);
+            this.shoulderPivot.rotation.z = THREE.MathUtils.lerp(-0.15, 0.95, easeP);
+            this.batPivot.rotation.x = THREE.MathUtils.lerp(0.35, -0.75, easeP);
+            this.batPivot.rotation.z = THREE.MathUtils.lerp(0, 0.65, easeP);
+          } else if (this.activeShotId === 4) {
+            // Square Cut: slash toward off-side point (-X world) with horizontal bat arc
+            this.leftLeg.position.x = THREE.MathUtils.lerp(-0.095, -0.20, easeP);
+            this.torso.rotation.y = THREE.MathUtils.lerp(0, 0.42, easeP);
+            this.shoulderPivot.rotation.x = THREE.MathUtils.lerp(0.55, -1.15, easeP);
+            this.shoulderPivot.rotation.z = THREE.MathUtils.lerp(-0.12, -0.85, easeP);
+            this.batPivot.rotation.x = THREE.MathUtils.lerp(0.35, -0.70, easeP);
+            this.batPivot.rotation.z = THREE.MathUtils.lerp(0, -0.60, easeP);
           } else if (this.activeShotId === 5) {
-            this.leftLeg.position.z = 0.28;
-            this.shoulderPivot.rotation.x = THREE.MathUtils.lerp(-0.8, 2.05, p);
-            this.batPivot.rotation.x = THREE.MathUtils.lerp(-0.6, 1.1, p);
+            // Lofted Slog: big front-foot stride and high follow-through arc toward bowler / sightscreen
+            this.leftLeg.position.x = THREE.MathUtils.lerp(-0.095, -0.32, easeP);
+            this.torso.rotation.y = THREE.MathUtils.lerp(0, -0.32, easeP);
+            this.shoulderPivot.rotation.x = THREE.MathUtils.lerp(0.70, -1.95, easeP);
+            this.shoulderPivot.rotation.z = THREE.MathUtils.lerp(-0.12, 0.30, easeP);
+            this.batPivot.rotation.x = THREE.MathUtils.lerp(0.45, -1.05, easeP);
           } else {
-            this.leftLeg.position.z = 0.26;
-            this.shoulderPivot.rotation.x = THREE.MathUtils.lerp(-0.7, 1.55, p);
-            this.batPivot.rotation.x = THREE.MathUtils.lerp(-0.5, 0.75, p);
+            // Straight Drive (1) & Cover Drive (2): classic front-foot stride and full flowing arc toward the ball
+            this.leftLeg.position.x = THREE.MathUtils.lerp(-0.095, -0.28, easeP);
+            this.torso.rotation.y = THREE.MathUtils.lerp(0, this.activeShotId === 2 ? 0.22 : -0.15, easeP);
+            this.shoulderPivot.rotation.x = THREE.MathUtils.lerp(0.60, -1.55, easeP);
+            this.shoulderPivot.rotation.z = THREE.MathUtils.lerp(-0.12, this.activeShotId === 2 ? -0.28 : 0.15, easeP);
+            this.batPivot.rotation.x = THREE.MathUtils.lerp(0.40, -0.80, easeP);
           }
         }
       }
@@ -3758,6 +3786,7 @@
         this.fielders.resetFielders();
         this.ball.hide();
         this.hasAttemptedSwing = false;
+        this.queuedSwing = false;
 
         this.cameraPosTarget.set(-0.32, 2.28, 13.6);
         this.cameraLookTarget.set(0, 1.05, -8.0);
@@ -3818,46 +3847,67 @@
         if (this.hasAttemptedSwing) return;
         if (this.state !== 'RUNUP' && this.state !== 'GATHER_PAUSE' && this.state !== 'FLIGHT') return;
 
-        this.hasAttemptedSwing = true;
-        this.batsman.triggerSwing(this.selectedShot);
-
+        // If the user finishes typing (or is in gather pause / early flight) and presses Enter/Space early,
+        // queue the swing so the batsman automatically swings when the ball enters the hitting zone!
         if (this.state === 'RUNUP' || this.state === 'GATHER_PAUSE' || !this.ball.active) {
-          document.getElementById('timing-feedback-label').textContent = 'VERY EARLY SWING (BEFORE RELEASE)!';
+          this.queuedSwing = true;
+          document.getElementById('timing-feedback-label').textContent = 'SWING QUEUED — WILL HIT ON ARRIVAL! ⚡';
           return;
         }
 
         const ballZ = this.ball.mesh.position.z;
-        const idealContactZ = 8.35;
-        const distError = Math.abs(ballZ - idealContactZ);
+        const idealContactZ = 7.85;
         const powerRatio = this.typing.getPreparationPower();
         const accuracyRatio = this.typing.getAccuracy() / 100;
 
-        const maxContactWindow = 1.35 + powerRatio * 1.30;
+        // Generous contact window so typing remains the primary game challenge:
+        // Covers almost the entire post-release pitch flight (-4.5m all the way to 10.6m past the stumps)
+        const maxEarlyZ = -4.5 - powerRatio * 3.5;
+        const maxLateZ = 10.65;
 
-        if (distError <= maxContactWindow) {
-          const timingQuality = Math.max(0.15, 1.0 - (distError / maxContactWindow));
+        if (ballZ < maxEarlyZ) {
+          // Ball just left bowler's hand — queue the swing rather than penalizing with a miss
+          this.queuedSwing = true;
+          document.getElementById('timing-feedback-label').textContent = 'SWING QUEUED — TIMING LOCKED IN! ⚡';
+          return;
+        }
+
+        this.hasAttemptedSwing = true;
+        this.queuedSwing = false;
+        this.batsman.triggerSwing(this.selectedShot);
+
+        if (ballZ >= maxEarlyZ && ballZ <= maxLateZ) {
+          const distError = Math.abs(ballZ - idealContactZ);
+          const forgivingSpan = 9.5 + powerRatio * 5.0;
+          // High floor on timingQuality (0.76 to 1.0) so hitting the ball rewards typing power reliably
+          const timingQuality = Math.max(0.76, Math.min(1.0, 1.04 - (distError / forgivingSpan) * 0.32));
 
           let timingLabel = 'GOOD TIMING';
           if (powerRatio === 0) {
             timingLabel = '0% POWER — MUST TYPE TO HIT HARD!';
           } else if (powerRatio <= 0.15) {
             timingLabel = `UNPREPARED (${Math.round(powerRatio * 100)}% POWER — DEAD BAT)`;
-          } else if (timingQuality > 0.82) {
-            timingLabel = `PERFECT TIMING • ${Math.round(powerRatio * 100)}% POWER! ⚡`;
+          } else if (timingQuality >= 0.88) {
+            timingLabel = `SWEET TIMING • ${Math.round(powerRatio * 100)}% POWER! ⚡`;
           } else if (ballZ < idealContactZ) {
-            timingLabel = 'EARLY TIMING';
+            timingLabel = `GOOD EARLY HIT • ${Math.round(powerRatio * 100)}% POWER`;
           } else {
-            timingLabel = 'LATE TIMING';
+            timingLabel = `GOOD LATE HIT • ${Math.round(powerRatio * 100)}% POWER`;
           }
 
           document.getElementById('timing-feedback-label').textContent = timingLabel;
+
+          // Snap ball near bat contact plane if hit slightly early so visual contact looks crisp
+          if (this.ball.mesh.position.z < 6.8) {
+            this.ball.mesh.position.z = 7.4;
+          }
 
           this.ball.applyBatShot(this.selectedShot, timingQuality, powerRatio, accuracyRatio);
           this.stadium.bounceMarker.visible = false;
           this.state = 'SHOT_PLAY';
           this.stateTimer = 0;
         } else {
-          document.getElementById('timing-feedback-label').textContent = ballZ < idealContactZ ? 'TOO EARLY — MISSED!' : 'TOO LATE — BEATEN!';
+          document.getElementById('timing-feedback-label').textContent = 'TOO LATE — PAST THE CREASE!';
         }
       }
 
@@ -4057,6 +4107,11 @@
         if (this.state === 'FLIGHT') {
           this.bowler.update(dt, this.readyWaitDuration, runupDur, this.gatherPauseDuration);
           this.ball.update(dt);
+
+          if (this.queuedSwing && !this.hasAttemptedSwing && this.ball.mesh.position.z >= 7.35) {
+            this.triggerBatSwing();
+            return;
+          }
 
           const flightFraction = THREE.MathUtils.clamp((this.ball.mesh.position.z - (-9.8)) / (10.0 - (-9.8)), 0, 1);
           const barPct = 34 + flightFraction * 64;
