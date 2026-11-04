@@ -22,7 +22,7 @@
               ></span
               ><span
                 class="font-telemetry-mono text-body-sm text-on-surface-variant uppercase tracking-widest"
-                >LIVE STADIUM EDITION • v1.0.5</span
+                >LIVE STADIUM EDITION • v2.0.1</span
               >
             </div>
           </div>
@@ -310,6 +310,11 @@
                   </span>
                 </div>
               </div>
+              <button id="btn-online-card" type="button" class="online-card mt-5 w-full max-w-xl rounded-xl border border-cyan-300/50 bg-slate-950/80 p-5 text-left shadow-[0_0_35px_rgba(34,211,238,.14)] transition hover:-translate-y-1 hover:border-cyan-200 hover:shadow-[0_0_45px_rgba(34,211,238,.28)]">
+                <span class="flex items-center justify-between"><span class="font-label-caps text-title-sm uppercase tracking-widest text-cyan-200">Play Online</span><span class="material-symbols-outlined text-cyan-300">public</span></span>
+                <span class="mt-1 block text-sm text-slate-300">Challenge a friend to a live two-player match.</span>
+                <span class="mt-4 flex gap-3"><span class="online-action" data-action="join">JOIN ROOM</span><span class="online-action" data-action="create">NEW GAME</span></span>
+              </button>
             </div>
             <!-- Editorial Horizontal Mechanics Bar (No floating cards, clean vertical dividing markers) -->
             <div class="launch-mechanics mt-10 lg:mt-14 pt-6 border-none">
@@ -454,4 +459,25 @@
           </div>
         </div>
       </footer>
+    </div>
+    <div id="online-modal" class="hidden fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="online-modal-title">
+      <div class="w-full max-w-md rounded-2xl border border-cyan-300/35 bg-slate-950 p-6 text-white shadow-2xl shadow-cyan-950/40">
+        <div class="flex items-start justify-between"><div><p class="text-xs font-bold uppercase tracking-[.25em] text-cyan-300">Online match</p><h2 id="online-modal-title" class="mt-1 text-2xl font-black">Join a room</h2></div><button id="online-modal-close" class="text-slate-400 hover:text-white" aria-label="Close">✕</button></div>
+        <div id="online-join-panel" class="mt-5"><label for="room-code-input" class="text-sm text-slate-300">Enter your friend’s room code</label><input id="room-code-input" maxlength="5" placeholder="ABCDE" aria-label="Room code" class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 font-mono text-xl uppercase tracking-[.35em] text-white"/><button id="btn-join-room" type="button" class="mt-4 w-full rounded-lg bg-cyan-300 px-5 py-3 font-black uppercase tracking-wider text-slate-950">Join room</button></div>
+        <div id="online-create-panel" class="hidden mt-5 text-center">
+          <fieldset class="mb-5">
+            <legend class="mb-2 text-sm font-bold uppercase tracking-wider text-slate-300">Choose difficulty</legend>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" class="room-diff-btn rounded-lg border border-cyan-300 px-2 py-2 text-sm font-bold text-cyan-100" data-value="club" aria-pressed="true">Net Practice</button>
+              <button type="button" class="room-diff-btn rounded-lg border border-slate-600 px-2 py-2 text-sm font-bold text-slate-300" data-value="pro" aria-pressed="false">Club Match</button>
+              <button type="button" class="room-diff-btn rounded-lg border border-slate-600 px-2 py-2 text-sm font-bold text-slate-300" data-value="test" aria-pressed="false">International</button>
+            </div>
+          </fieldset>
+          <button id="btn-create-room" type="button" class="w-full rounded-lg bg-cyan-300 px-5 py-3 font-black uppercase tracking-wider text-slate-950">Create room</button>
+          <div id="room-loader" class="hidden mx-auto my-4 h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-cyan-300"></div>
+          <p id="room-status" class="mt-3 text-slate-300" aria-live="polite"></p>
+          <div id="created-room-tools" class="hidden"><div id="created-room-code" class="my-4 font-mono text-4xl font-black tracking-[.35em] text-cyan-200"></div><div class="flex justify-center gap-3"><button id="btn-copy-room" class="icon-action" aria-label="Copy room link" title="Copy link"><span class="material-symbols-outlined">content_copy</span></button><button id="btn-share-room" class="icon-action" aria-label="Share room" title="Share"><span class="material-symbols-outlined">share</span></button></div><p class="mt-4 text-sm text-amber-200">Waiting for second user…</p><button id="btn-dismiss-room" class="mt-5 w-full rounded-lg border border-rose-400/50 px-4 py-3 font-bold uppercase tracking-wider text-rose-200 hover:bg-rose-950/50">Dismiss room</button></div>
+        </div>
+        <p id="online-error" class="mt-3 min-h-5 text-sm text-rose-300" aria-live="polite"></p>
+      </div>
     </div>

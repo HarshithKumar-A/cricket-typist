@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomCode": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['status', 'difficulty', 'overs', 'balls', 'players', 'scores']) && newData.child('overs').val() === 2 && newData.child('balls').numChildren() === 12"
+      }
+    }
+  }
+}
