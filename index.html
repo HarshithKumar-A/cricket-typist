@@ -187,6 +187,10 @@
   <body>
     <!-- 3D WebGL Canvas -->
     <canvas id="game-canvas"></canvas>
+    <div id="multiplayer-room-banner" class="hidden fixed top-3 left-1/2 -translate-x-1/2 z-30 rounded-xl bg-slate-950/90 border border-cyan-400/50 px-4 py-2 text-center text-sm text-white shadow-xl">
+      <span class="text-cyan-300 font-bold">ROOM</span> <span id="multiplayer-room-code" class="font-mono font-black tracking-widest"></span>
+      <span id="multiplayer-room-live" class="ml-2 text-slate-300"></span>
+    </div>
 
     <!-- BROADCAST HUD LAYER -->
     <div
@@ -234,13 +238,13 @@
                 >0.00</span
               >
             </div>
-            <div class="text-slate-400">
+            <div class="text-slate-400" id="hud-target-row">
               TARGET:
               <span class="text-amber-400 font-bold mono-font" id="hud-target"
                 >28</span
               >
             </div>
-            <div class="text-slate-400">
+            <div class="text-slate-400" id="hud-need-row">
               NEED:
               <span class="text-emerald-400 font-bold mono-font" id="hud-need"
                 >28 off 12</span
@@ -252,6 +256,11 @@
                 >0🔥</span
               >
             </div>
+          </div>
+          <div id="hud-opponent-score" class="hidden min-w-[190px] border-l border-slate-700 pl-4">
+            <div class="text-[10px] font-black uppercase tracking-widest text-cyan-200">Friend <span id="hud-opponent-total" class="ml-1 text-white">0/0</span></div>
+            <div class="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">Last 6 balls</div>
+            <div id="hud-opponent-balls" class="mt-1 flex min-h-6 items-center gap-1"></div>
           </div>
         </div>
 
@@ -743,11 +752,11 @@
         >
           VICTORY BY 8 WICKETS!
         </h2>
-        <p class="text-sm text-slate-300 mt-1" id="summary-subline">
+        <p class="summary-result-callout mt-3" id="summary-subline" aria-live="polite">
           Target chased under the lights with clinical typing & timing.
         </p>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 my-6">
+        <div class="my-6">
           <div
             class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800"
           >

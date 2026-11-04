@@ -1,3 +1,4 @@
+import { createRoom, joinRoom, watchRoom, submitBall, finishPlayer, deleteRoom } from "./firebase-multiplayer.js";
       /********************************************************************
        * 1. WEB AUDIO SYNTHESIZER MODULE
        * Generates realistic procedural cricket sound effects & ambience
@@ -314,7 +315,7 @@
             sentenceKey !== null && pool[sentenceKey]
               ? String(sentenceKey)
               : keys[Math.floor(Math.random() * keys.length)];
-          this.sentenceKey = Number(selectedKey);
+          this.sentenceKey = selectedKey;
           this.sentence = pool[selectedKey];
           this.cursor = 0;
           this.errors = 0;
@@ -3820,6 +3821,9 @@
           this.foursCount = 0;
           this.sixesCount = 0;
           this.thisOverHistory = [];
+          this.multiplayer = null;
+          this.onlineLaunched = false;
+          this.roomUnsubscribe = null;
 
           this.state = "MENU";
           this.stateTimer = 0;
@@ -3977,6 +3981,142 @@
               this.launchMatchFromLaunchBay();
             });
 
+          const onlineModal = document.getElementById("online-modal");
+          const onlineError = document.getElementById("online-error");
+          const openOnlineModal = mode => {
+            onlineError.textContent = "";
+            document.getElementById("online-join-panel").classList.toggle("hidden", mode !== "join");
+            document.getElementById("online-create-panel").classList.toggle("hidden", mode !== "create");
+            document.getElementById("online-modal-title").textContent = mode === "join" ? "Join a room" : "Create a room";
+            if (mode === "create") {
+              document.querySelectorAll(".room-diff-btn").forEach(button => {
+                const selected = button.dataset.value === this.launchDifficulty;
+                button.setAttribute("aria-pressed", String(selected));
+                button.classList.toggle("border-cyan-300", selected);
+                button.classList.toggle("text-cyan-100", selected);
+                button.classList.toggle("border-slate-600", !selected);
+                button.classList.toggle("text-slate-300", !selected);
+              });
+            }
+            onlineModal.classList.remove("hidden");
+          };
+          document.querySelectorAll(".room-diff-btn").forEach(button => {
+            button.addEventListener("click", () => {
+              const launchButton = [...diffButtons].find(candidate => candidate.dataset.value === button.dataset.value);
+              if (launchButton) launchButton.click();
+              document.querySelectorAll(".room-diff-btn").forEach(option => {
+                const selected = option === button;
+                option.setAttribute("aria-pressed", String(selected));
+                option.classList.toggle("border-cyan-300", selected);
+                option.classList.toggle("text-cyan-100", selected);
+                option.classList.toggle("border-slate-600", !selected);
+                option.classList.toggle("text-slate-300", !selected);
+              });
+            });
+          });
+          document.getElementById("btn-online-card").addEventListener("click", event => {
+            const action = event.target.closest("[data-action]")?.dataset.action || "join";
+            openOnlineModal(action);
+          });
+          document.getElementById("online-modal-close").addEventListener("click", () => onlineModal.classList.add("hidden"));
+          const beginOnline = async code => {
+            onlineError.textContent = "";
+            try {
+              this.multiplayer = code
+                ? await joinRoom(code)
+                : await createRoom(LAUNCH_DIFFICULTY_PRESETS[this.launchDifficulty].engineKey,
+                  Object.keys(CRICKET_SENTENCES[LAUNCH_DIFFICULTY_PRESETS[this.launchDifficulty].engineKey] || {}).sort(() => Math.random() - 0.5).slice(0, 12));
+              this.difficulty = this.multiplayer.room.difficulty;
+              this.launchDifficulty = Object.keys(LAUNCH_DIFFICULTY_PRESETS).find(key => LAUNCH_DIFFICULTY_PRESETS[key].engineKey === this.difficulty) || "club";
+              this.maxOvers = 2;
+              document.getElementById("hud-tournament").textContent = "YOU 🏏 vs FRIEND";
+              document.getElementById("hud-target-row").classList.add("hidden");
+              document.getElementById("hud-need-row").classList.add("hidden");
+              document.getElementById("hud-opponent-score").classList.remove("hidden");
+              document.getElementById("hud-score").setAttribute("aria-label", "Your current score");
+              this.onlineLaunched = false;
+              if (code) {
+                onlineModal.classList.add("hidden");
+                this.listenToMultiplayerRoom();
+                this.launchMatchFromLaunchBay();
+              } else {
+                document.getElementById("room-loader").classList.add("hidden");
+                document.getElementById("room-status").textContent = "Room ready. Share this code with your friend.";
+                document.getElementById("created-room-code").textContent = this.multiplayer.code;
+                document.getElementById("created-room-tools").classList.remove("hidden");
+                this.listenToMultiplayerRoom();
+                const invite = new URL(location.href); invite.searchParams.set("matchid", this.multiplayer.code);
+                this.roomInviteUrl = invite.href;
+              }
+            } catch (error) { onlineError.textContent = error.message; document.getElementById("room-loader").classList.add("hidden"); document.getElementById("btn-create-room").classList.remove("hidden"); }
+          };
+          document.getElementById("btn-create-room").addEventListener("click", () => {
+            document.getElementById("btn-create-room").classList.add("hidden");
+            document.getElementById("room-loader").classList.remove("hidden");
+            document.getElementById("room-status").textContent = "Creating your room…";
+            beginOnline(null);
+          });
+          document.getElementById("btn-join-room").addEventListener("click", () => beginOnline(document.getElementById("room-code-input").value));
+          const copyRoomInvite = async () => {
+            const inviteUrl = this.roomInviteUrl;
+            if (!inviteUrl) throw new Error("The room link is not ready yet.");
+            if (navigator.clipboard?.writeText) {
+              try {
+                await navigator.clipboard.writeText(inviteUrl);
+                return;
+              } catch (_) {
+                // Fall through to the legacy copy method when clipboard access is blocked.
+              }
+            }
+            const input = document.createElement("textarea");
+            input.value = inviteUrl;
+            input.setAttribute("readonly", "");
+            input.style.position = "fixed";
+            input.style.opacity = "0";
+            document.body.appendChild(input);
+            input.select();
+            const copied = document.execCommand("copy");
+            input.remove();
+            if (!copied) throw new Error("Copy was blocked by the browser. Please copy the link from the address bar.");
+          };
+          document.getElementById("btn-copy-room").addEventListener("click", async () => {
+            const status = document.getElementById("room-status");
+            try {
+              await copyRoomInvite();
+              status.textContent = "Room link copied. Send it to your friend.";
+            } catch (error) { status.textContent = error.message; }
+          });
+          document.getElementById("btn-share-room").addEventListener("click", async () => {
+            const status = document.getElementById("room-status");
+            try {
+              if (navigator.share) await navigator.share({ url: this.roomInviteUrl, text: "Join my cricket match" });
+              else await copyRoomInvite();
+              status.textContent = navigator.share ? "Room link shared." : "Room link copied. Send it to your friend.";
+            } catch (error) {
+              if (error.name === "AbortError") return;
+              if (navigator.share) {
+                try {
+                  await copyRoomInvite();
+                  status.textContent = "Sharing is unavailable. Room link copied instead.";
+                } catch (copyError) { status.textContent = copyError.message; }
+              } else status.textContent = error.message;
+            }
+          });
+          document.getElementById("btn-dismiss-room").addEventListener("click", async () => {
+            if (this.roomUnsubscribe) this.roomUnsubscribe();
+            await deleteRoom(this.multiplayer.code);
+            this.multiplayer = null;
+            this.onlineLaunched = false;
+            onlineModal.classList.add("hidden");
+            this.showLaunchScreen();
+          });
+          const inviteCode = new URLSearchParams(location.search).get("matchid");
+          if (inviteCode) {
+            const cleanUrl = new URL(location.href); cleanUrl.searchParams.delete("matchid"); history.replaceState({}, "", cleanUrl);
+            openOnlineModal("join"); document.getElementById("room-code-input").value = inviteCode;
+            beginOnline(inviteCode);
+          }
+
           document
             .getElementById("btn-play-again")
             .addEventListener("click", () => {
@@ -3987,6 +4127,21 @@
           document
             .getElementById("btn-summary-menu")
             .addEventListener("click", () => {
+              if (this.multiplayer) {
+                if (this.roomUnsubscribe) this.roomUnsubscribe();
+                this.multiplayer = null;
+                this.onlineLaunched = false;
+                document.getElementById("multiplayer-room-banner").classList.add("hidden");
+                document.getElementById("opponent-recent-balls")?.classList.add("hidden");
+                document.getElementById("hud-opponent-score").classList.add("hidden");
+                document.getElementById("hud-target-row").classList.remove("hidden");
+                document.getElementById("hud-need-row").classList.remove("hidden");
+                document.getElementById("hud-tournament").textContent = "RCB 🏏 vs CSK 🦁";
+                document.getElementById("hud-score").removeAttribute("aria-label");
+                document.getElementById("btn-play-again").classList.remove("hidden");
+                document.querySelectorAll("#summary-card .grid > div").forEach(card => card.classList.remove("hidden"));
+                document.querySelector("#sum-score").parentElement.querySelector("div:first-child").textContent = "FINAL SCORE";
+              }
               this.showLaunchScreen();
             });
 
@@ -4110,6 +4265,74 @@
           }, LAUNCH_CALIBRATION_MS);
         }
 
+        listenToMultiplayerRoom() {
+          if (this.roomUnsubscribe) this.roomUnsubscribe();
+          this.roomUnsubscribe = watchRoom(this.multiplayer.code, room => {
+            const status = document.getElementById("room-status");
+            if (!room) { if (status) status.textContent = "Room was closed."; return; }
+            const players = Object.keys(room.players || {}).length;
+            const opponentUid = Object.keys(room.players || {}).find(uid => uid !== this.multiplayer.uid);
+            const opponent = opponentUid ? room.scores?.[opponentUid] : null;
+            const liveText = opponent ? (opponent.finished ? `Opponent finished: ${opponent.summary?.runs ?? 0} runs` : `Opponent: ${Object.values(opponent).filter(v => v && typeof v === "object" && "runs" in v).length} balls scored`) : `${players}/2 players • waiting for opponent`;
+            if (status) status.textContent = `Room ${this.multiplayer.code} • ${liveText}`;
+            document.getElementById("multiplayer-room-code").textContent = this.multiplayer.code;
+            document.getElementById("multiplayer-room-live").textContent = liveText;
+            document.getElementById("multiplayer-room-banner").classList.remove("hidden");
+            this.renderOpponentRecentBalls(opponent);
+            if (players === 2 && !this.onlineLaunched && this.state === "MENU") {
+              this.onlineLaunched = true;
+              document.getElementById("online-modal").classList.add("hidden");
+              this.launchMatchFromLaunchBay();
+            }
+            if (room.status === "complete") this.showOnlineMatchResult(room);
+          });
+        }
+
+        renderOpponentRecentBalls(score) {
+          document.getElementById("hud-opponent-score").classList.toggle("hidden", !this.multiplayer);
+          if (!score) {
+            document.getElementById("hud-opponent-total").textContent = "0/0";
+            document.getElementById("hud-opponent-balls").innerHTML = '<span class="text-[10px] text-slate-500">No balls yet</span>';
+            return;
+          }
+          const balls = Object.entries(score).filter(([, value]) => value && typeof value === "object" && "runs" in value).sort(([a], [b]) => Number(a) - Number(b)).slice(-6);
+          const latest = balls[balls.length - 1]?.[1];
+          const summary = score.summary || {};
+          document.getElementById("hud-opponent-total").textContent = `${summary.runs ?? latest?.total ?? 0}/${summary.wickets ?? latest?.wickets ?? 0}`;
+          document.getElementById("hud-opponent-balls").innerHTML = balls.map(([, ball]) => {
+            const value = ball.wicket ? "W" : String(ball.runs);
+            const style = ball.wicket ? "border-rose-300 bg-rose-500 text-white shadow-[0_0_10px_rgba(244,63,94,.5)]" : ball.runs === 6 ? "border-amber-200 bg-amber-400 text-slate-950 shadow-[0_0_10px_rgba(251,191,36,.55)]" : ball.runs === 4 ? "border-emerald-200 bg-emerald-400 text-slate-950 shadow-[0_0_10px_rgba(52,211,153,.5)]" : "border-slate-600 bg-slate-800 text-slate-200";
+            return `<span aria-label="${ball.wicket ? "Wicket" : `${ball.runs} runs`}" class="grid h-6 min-w-6 place-items-center rounded-full border px-1.5 text-[11px] font-black ${style}">${value}</span>`;
+          }).join("") || '<span class="text-[10px] text-slate-500">No balls yet</span>';
+        }
+
+        setSummarySubline(message) {
+          const element = document.getElementById("summary-subline");
+          element.textContent = message;
+          element.classList.remove("result-loss", "result-win", "result-tie", "result-enter");
+          if (/lost/i.test(message)) element.classList.add("result-loss");
+          else if (/beat your friend|target chased/i.test(message)) element.classList.add("result-win");
+          else if (/tie/i.test(message)) element.classList.add("result-tie");
+          void element.offsetWidth;
+          element.classList.add("result-enter");
+        }
+
+        showOnlineMatchResult(room) {
+          const opponentId = Object.keys(room.players || {}).find(uid => uid !== this.multiplayer.uid);
+          const mine = room.scores?.[this.multiplayer.uid]?.summary || { runs: this.runs, wickets: this.wickets };
+          const theirs = room.scores?.[opponentId]?.summary || { runs: 0, wickets: 0 };
+          document.getElementById("summary-card").classList.remove("hidden");
+          document.getElementById("modal-overlay").classList.remove("hidden");
+          document.getElementById("summary-status-tag").textContent = "ONLINE MATCH COMPLETE";
+          // document.getElementById("summary-headline").textContent = `${mine.runs}/${mine.wickets}  —  ${theirs.runs}/${theirs.wickets}`;
+          this.setSummarySubline(mine.runs < theirs.runs ? "You lost to your friend." : mine.runs > theirs.runs ? "You beat your friend!" : "A tie with your friend.");
+          document.getElementById("sum-score").textContent = `YOU ${mine.runs}/${mine.wickets} • FRIEND ${theirs.runs}/${theirs.wickets}`;
+          document.querySelector("#sum-score").parentElement.querySelector("div:first-child").textContent = "FINAL SCORES";
+          document.querySelectorAll("#summary-card .grid > div").forEach((card, index) => card.classList.toggle("hidden", index !== 0));
+          document.getElementById("btn-play-again").classList.add("hidden");
+          document.getElementById("btn-summary-menu").textContent = "Return to landing";
+        }
+
         startNewMatch() {
           document.getElementById("launch-screen").classList.add("hidden");
           document.getElementById("modal-overlay").classList.add("hidden");
@@ -4137,7 +4360,7 @@
 
         prepareNextDelivery() {
           if (
-            this.runs >= this.targetRuns ||
+            (!this.multiplayer && this.runs >= this.targetRuns) ||
             this.wickets >= this.maxWickets ||
             this.legalBalls >= this.maxOvers * 6
           ) {
@@ -4183,7 +4406,8 @@
           document.getElementById("timing-cursor").style.left = "0%";
           document.getElementById("result-banner").classList.add("hidden");
 
-          this.typing.loadNextSentence(this.difficulty);
+          const sharedSentenceId = this.multiplayer?.room?.balls?.[this.legalBalls] ?? null;
+          this.typing.loadNextSentence(this.difficulty, sharedSentenceId);
           this.bowler.startRunUp();
           this.state = "RUNUP";
           this.stateTimer = 0;
@@ -4337,8 +4561,16 @@
           this.stateTimer = 0;
           this.typing.isActive = false;
 
+          const deliveryIndex = this.legalBalls;
           this.legalBalls++;
           this.runs += runsAdded;
+          if (this.multiplayer) {
+            submitBall(this.multiplayer.code, this.multiplayer.uid, deliveryIndex, {
+              sentenceId: this.multiplayer.room?.balls?.[deliveryIndex] ?? this.typing.sentenceKey,
+              runs: runsAdded, wicket: Boolean(isWicket), total: this.runs,
+              wickets: this.wickets + (isWicket ? 1 : 0), at: Date.now(),
+            }).catch(error => console.error("Could not sync delivery:", error));
+          }
 
           if (isWicket) {
             this.wickets++;
@@ -4449,19 +4681,22 @@
 
         showInningsSummary() {
           this.state = "INNINGS_OVER";
+          if (this.multiplayer) finishPlayer(this.multiplayer.code, this.multiplayer.uid, {
+            runs: this.runs, wickets: this.wickets, balls: this.legalBalls,
+          }).catch(error => console.error("Could not sync final score:", error));
           document.getElementById("summary-card").classList.remove("hidden");
           document.getElementById("modal-overlay").classList.remove("hidden");
 
-          const won = this.runs >= this.targetRuns;
-          document.getElementById("summary-status-tag").textContent = won
-            ? "TARGET CHASED SUCCESSFULLY"
-            : "INNINGS CONCLUDED";
-          document.getElementById("summary-headline").textContent = won
-            ? `VICTORY BY ${this.maxWickets - this.wickets} WICKETS! 🏆`
-            : `SHORT BY ${this.targetRuns - this.runs} RUNS`;
-          document.getElementById("summary-subline").textContent = won
-            ? "Clinical sentence typing and sweet-spot timing under the floodlights!"
-            : "Great battle at the crease! Sharpen your typing speed and try again.";
+          const won = !this.multiplayer && this.runs >= this.targetRuns;
+          document.getElementById("summary-status-tag").textContent = this.multiplayer
+            ? "YOUR INNINGS CONCLUDED"
+            : won ? "TARGET CHASED SUCCESSFULLY" : "INNINGS CONCLUDED";
+          document.getElementById("summary-headline").textContent = this.multiplayer
+            ? `${this.runs} RUNS • ${this.legalBalls} BALLS`
+            : won ? `VICTORY BY ${this.maxWickets - this.wickets} WICKETS! 🏆` : `SHORT BY ${this.targetRuns - this.runs} RUNS`;
+          this.setSummarySubline(this.multiplayer
+            ? "Your score is live in the room. Compare totals when both innings are complete."
+            : won ? "Clinical sentence typing and sweet-spot timing under the floodlights!" : "Great battle at the crease! Sharpen your typing speed and try again.");
 
           const completedOvers = Math.floor(this.legalBalls / 6);
           const ballsInOver = this.legalBalls % 6;
