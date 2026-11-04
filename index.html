@@ -887,40 +887,28 @@
     /********************************************************************
      * 2. SENTENCE POOL & TYPING ENGINE MODULE
      ********************************************************************/
-    const CRICKET_SENTENCES = {
-      easy: [
-        "WATCH THE BALL CLOSELY",
-        "KEEP YOUR HEAD STILL",
-        "PLAY STRAIGHT DOWN THE GROUND",
-        "HOLD YOUR POSE ON THE DRIVE",
-        "FIND THE GAP IN THE COVERS",
-        "TIME THE BALL OFF THE PADS",
-        "STEP INTO THE FULL DELIVERY",
-        "WAIT FOR THE SPIN AND CUT",
-        "SWING SMOOTHLY THROUGH THE LINE",
-        "PICK THE LENGTH EARLY"
-      ],
-      medium: [
-        "WATCH THE SHINE ON THE LEATHER BALL",
-        "LEAN INTO THE COVER DRIVE WITH BALANCE",
-        "TRANSFER YOUR WEIGHT ONTO THE FRONT FOOT",
-        "ROCK BACK QUICKLY TO PULL THE SHORT BALL",
-        "PIERCE THE INFIELD WITH A CRISP STRAIGHT DRIVE",
-        "KEEP YOUR ELBOW HIGH AND PLAY UNDER YOUR EYES",
-        "READ THE BOWLER FROM THE POINT OF RELEASE",
-        "ROTATE THE STRIKE AND PRESSURE THE FIELDERS",
-        "LOFT THE OVERPITCHED DELIVERY OVER LONG ON",
-        "LATE CUT THE BALL PAST POINT FOR FOUR"
-      ],
-      hard: [
-        "PICK THE LATE OUTSWINGER AND DRIVE IT HANDSOMELY THROUGH EXTRA COVER",
-        "JUDGE THE PACE OF THE YORKER AND DIG IT OUT PAST MID ON",
-        "DANCE DOWN THE TRACK AND LAUNCH THE BALL INTO THE UPPER TIER",
-        "USE SOFT HANDS TO DEFLECT THE GOOD LENGTH DELIVERY INTO THE GAP",
-        "COMMIT TO THE PULL SHOT WHEN THE FAST BOWLER DROPS IT SHORT",
-        "MAINTAIN PERFECT TIMING AND COMPOSURE UNDER THE STADIUM FLOODLIGHTS"
-      ]
+    let CRICKET_SENTENCES = {
+      easy: {
+        1: "WATCH THE BALL CLOSELY",
+      },
+      medium: {
+        11: "WATCH THE SHINE ON THE LEATHER BALL",
+      },
+      hard: {
+        21: "PICK THE LATE OUTSWINGER AND DRIVE IT HANDSOMELY THROUGH EXTRA COVER",
+      }
     };
+
+    fetch('./cricket_sentences.json')
+      .then((res) => (res.ok ? res.json() : Promise.reject(res.statusText)))
+      .then((data) => {
+        if (data && typeof data === 'object') {
+          CRICKET_SENTENCES = data;
+        }
+      })
+      .catch(() => {
+        // Fallback to inline CRICKET_SENTENCES when opened via file:// protocol
+      });
 
     class TypingEngine {
       constructor(audio) {
@@ -967,9 +955,14 @@
         this.matchWpmSamples = [];
       }
 
-      loadNextSentence(difficulty = 'medium') {
+      loadNextSentence(difficulty = 'medium', sentenceKey = null) {
         const pool = CRICKET_SENTENCES[difficulty] || CRICKET_SENTENCES.medium;
-        this.sentence = pool[Math.floor(Math.random() * pool.length)];
+        const keys = Object.keys(pool);
+        const selectedKey = (sentenceKey !== null && pool[sentenceKey])
+          ? String(sentenceKey)
+          : keys[Math.floor(Math.random() * keys.length)];
+        this.sentenceKey = Number(selectedKey);
+        this.sentence = pool[selectedKey];
         this.cursor = 0;
         this.errors = 0;
         this.totalKeystrokes = 0;
