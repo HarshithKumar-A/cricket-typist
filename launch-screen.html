@@ -1,0 +1,457 @@
+<!-- LAUNCH BAY START SCREEN -->
+    <div
+      id="launch-screen"
+      class="launch-screen fixed inset-0 z-40 overflow-y-auto bg-surface-container-lowest font-body-md text-on-surface antialiased flex flex-col selection:bg-primary selection:text-on-primary"
+    >
+      <header
+        class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-md"
+      >
+        <div
+          class="h-16 w-full px-margin-mobile lg:px-margin-desktop flex items-center justify-between"
+        >
+          <div class="flex items-center gap-space-md">
+            <span
+              class="font-headline-md text-headline-md uppercase tracking-wider text-on-surface font-bold"
+              >CRICKET TYPIST 3D</span
+            >
+            <div
+              class="flex items-center gap-space-xs px-space-sm py-0.5 bg-surface-container-low rounded-sm"
+            >
+              <span
+                class="w-1.5 h-1.5 rounded-xl bg-primary animate-pulse"
+              ></span
+              ><span
+                class="font-telemetry-mono text-body-sm text-on-surface-variant uppercase tracking-widest"
+                >LIVE STADIUM EDITION • v1.0.5</span
+              >
+            </div>
+          </div>
+          <div class="flex items-center gap-space-sm">
+            <div
+              class="flex items-center bg-surface-container-low rounded-sm p-0.5"
+            >
+              <button
+                id="btn-launch-sound"
+                aria-label="Toggle Sound"
+                class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-sm transition-colors flex items-center justify-center"
+                type="button"
+              >
+                <span
+                  class="material-symbols-outlined text-[18px]"
+                  id="launch-sound-icon"
+                  >volume_up</span
+                ></button
+              ><button
+                id="btn-launch-fullscreen"
+                aria-label="Toggle Fullscreen"
+                class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-sm transition-colors flex items-center justify-center"
+                type="button"
+              >
+                <span
+                  class="material-symbols-outlined text-[18px]"
+                  id="launch-fullscreen-icon"
+                  >fullscreen</span
+                >
+              </button>
+            </div>
+            <div
+              class="w-8 h-8 rounded-xl bg-primary flex items-center justify-center"
+            >
+              <span
+                class="material-symbols-outlined text-on-primary text-[18px]"
+                >person</span
+              >
+            </div>
+          </div>
+        </div>
+      </header>
+      <main class="w-full pt-16 flex-1 bg-surface-container-lowest">
+        <div
+          class="launch-stage flex flex-col w-full relative min-h-[calc(100vh-4rem)] overflow-hidden bg-surface-container-lowest"
+        >
+          <!-- Immersive Stadium Background with Directional Vignette -->
+          <div class="absolute inset-0 z-0">
+            <div
+              class="launch-backdrop w-full h-full bg-cover bg-right md:bg-center scale-105 transform motion-safe:transition-transform motion-safe:duration-1000 ease-out"
+              style="
+                background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuBXT-7oOOzaUManqCuAYXYUcwkAd0DFGUj8xyoQ7FjVIH1LLyWrhWySxgTnETm8p12OKvuPOvee00NB7_YpTp9TIvHwv4NOH9AAUsi_TrrppNgiGBBpa3xkl56qqC7ZrfUu99KPTfW_mJ8diAwbCN29fIojSiTW_GJMZd-2OC20nPFMV4Fi8DyBcCfxQwBccjv2-t9KqdHcuyddjO2SZmgQCs3Ajyau3k4Dbtbo96f0XbvbXXrk3irYuA&quot;);
+              "
+            ></div>
+            <!-- Broadcast Lighting Shroud: heavy pitch-black fade on left for editorial typography, floodlit batsman clarity on right -->
+            <div
+              class="absolute inset-0 bg-gradient-to-r from-surface-container-lowest via-surface-container-lowest/90 to-transparent"
+            ></div>
+            <div
+              class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/60 to-transparent"
+            ></div>
+            <!-- Subtle turf glow accent at base -->
+            <div
+              class="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-primary/10 via-transparent to-transparent pointer-events-none"
+            ></div>
+          </div>
+          <!-- Real-Time Stadium HUD Telemetry Strip (Top Bar Under Nav) -->
+          <div
+            class="launch-telemetry relative z-10 w-full px-margin-mobile lg:px-margin-desktop pt-4 pb-2 flex flex-wrap items-center justify-between gap-4 text-on-surface-variant font-telemetry-mono text-body-sm"
+          >
+            <div class="flex items-center gap-space-md">
+              <div
+                class="flex items-center gap-1.5 px-2.5 py-1 bg-surface-container-low/80 backdrop-blur rounded-sm"
+              >
+                <span
+                  class="w-1.5 h-1.5 rounded-xl bg-primary animate-pulse"
+                ></span>
+                <span
+                  class="text-on-surface uppercase tracking-wider font-semibold"
+                  >THE OVAL FLOODLIT STADIUM</span
+                >
+              </div>
+              <div class="hidden sm:flex items-center gap-space-xs">
+                <span class="text-outline">AIR:</span>
+                <span class="text-on-surface">18°C DEW</span>
+                <span class="text-outline mx-1">•</span>
+                <span class="text-outline">PITCH:</span>
+                <span class="text-primary font-bold"
+                  >HARD DECK / FAST BOUNCE</span
+                >
+              </div>
+            </div>
+            <div class="flex items-center gap-4 text-body-sm">
+              <div
+                class="flex items-center gap-1.5 px-2 py-0.5 bg-surface-container-low/70 rounded-sm"
+              >
+                <span class="text-outline">TARGET FPS:</span>
+                <span class="text-primary font-bold">120hz</span>
+              </div>
+              <div
+                class="flex items-center gap-1.5 px-2 py-0.5 bg-surface-container-low/70 rounded-sm"
+              >
+                <span class="text-outline">INPUT LAG:</span>
+                <span class="text-on-surface font-bold">1.2ms</span>
+              </div>
+            </div>
+          </div>
+          <!-- Main Hero Stage & Selection Layout -->
+          <div
+            class="relative z-10 w-full flex-1 px-margin-mobile lg:px-margin-desktop py-space-md lg:py-space-xl flex flex-col justify-between max-w-7xl"
+          >
+            <!-- Editorial Headline Block -->
+            <div class="launch-headline max-w-2xl flex flex-col gap-space-sm mt-2 lg:mt-6">
+              <!-- Broadcast Overline Tag -->
+              <div class="flex items-center gap-space-sm">
+                <span
+                  class="px-2 py-0.5 bg-secondary-container/20 text-secondary font-label-caps text-label-caps uppercase rounded-sm tracking-widest"
+                >
+                  CHAMPIONSHIP PRECISION TYPING
+                </span>
+                <div class="h-px w-16 bg-surface-variant"></div>
+                <span
+                  class="font-telemetry-mono text-body-sm text-on-surface-variant uppercase tracking-widest hidden sm:inline"
+                >
+                  SERIES IV • STAGE FINALS
+                </span>
+              </div>
+              <!-- Athletic Condensed Title -->
+              <h1
+                class="font-display-xl text-display-xl uppercase tracking-tighter text-on-surface font-extrabold leading-none text-balance"
+              >
+                CRICKET <span class="text-primary">TYPIST</span> 3D
+              </h1>
+              <!-- Editorial Subhead -->
+              <p
+                class="font-title-sm text-title-sm uppercase tracking-wide text-secondary font-semibold"
+              >
+                Read the ball. Find the gap. Time your shot.
+              </p>
+              <!-- Tactical Description -->
+              <p
+                class="font-body-lg text-body-lg text-on-surface-variant max-w-xl leading-relaxed mt-1"
+              >
+                Type the bowler’s callout phrase during the delivery run-up,
+                then trigger your shot exactly as the seam hits your crease
+                strikezone. Precision cadence unlocks boundaries; late timing
+                shatters the bails.
+              </p>
+            </div>
+            <!-- Match Configuration Controls (Segmented, Editorial Hardware Style) -->
+            <div class="launch-controls mt-8 lg:mt-10 flex flex-col gap-space-lg max-w-2xl">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-lg">
+                <!-- Difficulty Segmented Strip -->
+                <div class="flex flex-col gap-2">
+                  <label
+                    class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider flex items-center gap-1.5"
+                  >
+                    <span class="w-1 h-3 bg-primary rounded-xl"></span>
+                    PACE DIFFICULTY
+                  </label>
+                  <div
+                    aria-label="Difficulty Selection"
+                    class="inline-flex p-1 bg-surface-container-low/90 rounded-sm backdrop-blur gap-1"
+                    role="radiogroup"
+                  >
+                    <button
+                      class="diff-btn flex-1 py-2 px-3 rounded-sm font-label-caps text-label-caps uppercase tracking-wider transition-all duration-150 bg-primary text-on-primary font-bold shadow-sm"
+                      data-group="difficulty"
+                      data-value="club"
+                      type="button"
+                    >
+                    NET PRACTICE
+                    </button>
+                    <button
+                      class="diff-btn flex-1 py-2 px-3 rounded-sm font-label-caps text-label-caps uppercase tracking-wider transition-all duration-150 bg-transparent text-on-surface-variant hover:text-on-surface"
+                      data-group="difficulty"
+                      data-value="pro"
+                      type="button"
+                    >
+                    CLUB MATCH
+                    </button>
+                    <button
+                      class="diff-btn flex-1 py-2 px-3 rounded-sm font-label-caps text-label-caps uppercase tracking-wider transition-all duration-150 bg-transparent text-on-surface-variant hover:text-on-surface"
+                      data-group="difficulty"
+                      data-value="test"
+                      type="button"
+                    >
+                    INTERNATIONAL
+                    </button>
+                  </div>
+                  <span
+                    class="spotlight-caption font-telemetry-mono text-body-sm text-outline"
+                    id="diff-caption"
+                  >
+                    120-130 KPH • Generous release window (65 WPM baseline)
+                  </span>
+                </div>
+                <!-- Match Length Segmented Strip -->
+                <div class="flex flex-col gap-2">
+                  <label
+                    class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider flex items-center gap-1.5"
+                  >
+                    <span class="w-1 h-3 bg-secondary rounded-xl"></span>
+                    INNINGS DURATION
+                  </label>
+                  <div
+                    aria-label="Innings Length Selection"
+                    class="inline-flex p-1 bg-surface-container-low/90 rounded-sm backdrop-blur gap-1"
+                    role="radiogroup"
+                  >
+                    <button
+                      class="overs-btn flex-1 py-2 px-3 rounded-sm font-label-caps text-label-caps uppercase tracking-wider transition-all duration-150 bg-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+                      data-group="overs"
+                      data-value="2"
+                      type="button"
+                    >
+                      2 Overs
+                    </button>
+                    <button
+                      class="overs-btn flex-1 py-2 px-3 rounded-sm font-label-caps text-label-caps uppercase tracking-wider transition-all duration-150 bg-primary text-on-primary font-bold shadow-sm"
+                      data-group="overs"
+                      data-value="5"
+                      type="button"
+                    >
+                      5 Overs
+                    </button>
+                    <button
+                      class="overs-btn flex-1 py-2 px-3 rounded-sm font-label-caps text-label-caps uppercase tracking-wider transition-all duration-150 bg-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+                      data-group="overs"
+                      data-value="10"
+                      type="button"
+                    >
+                      10 Overs
+                    </button>
+                  </div>
+                  <span
+                    class="spotlight-caption font-telemetry-mono text-body-sm text-outline"
+                    id="overs-caption"
+                  >
+                    30 Deliveries • Super Over Chase Matrix (Est. 6 Mins)
+                  </span>
+                </div>
+              </div>
+              <!-- Action Launch Row -->
+              <div
+                class="flex flex-col sm:flex-row items-start sm:items-center gap-space-md pt-2"
+              >
+                <button
+                  class="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary hover:bg-primary-container text-on-primary font-label-caps text-title-sm uppercase tracking-wider rounded-sm transition-all transform active:scale-95 shadow-lg shadow-primary/20 hover:shadow-primary/40 focus:outline-none"
+                  id="btn-start-match"
+                  type="button"
+                >
+                  <!-- Custom Cricket Bat & Ball Stylized Broadcast Icon -->
+                  <svg
+                    class="w-5 h-5 fill-current transition-transform group-hover:-rotate-12 duration-200"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M19.4 2.6a2 2 0 0 0-2.8 0l-9.9 9.9a4 4 0 0 0-1.2 2.8l-.5 4.7 4.7-.5a4 4 0 0 0 2.8-1.2l9.9-9.9a2 2 0 0 0 0-2.8l-3-3zM8.5 17.5l-2.1.2.2-2.1 7.8-7.8 1.9 1.9-7.8 7.8z"
+                    ></path>
+                    <circle class="opacity-80" cx="5" cy="5" r="2.5"></circle>
+                  </svg>
+                  <span class="font-extrabold tracking-wider">START MATCH</span>
+                  <span
+                    class="material-symbols-outlined text-[20px] transition-transform group-hover:translate-x-1 duration-150"
+                    >sports_cricket</span
+                  >
+                </button>
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="px-1.5 py-0.5 bg-surface-container text-primary rounded-sm font-telemetry-mono text-[11px] font-bold"
+                      >ENTER ↵</span
+                    >
+                    <span
+                      class="font-telemetry-mono text-body-sm text-on-surface"
+                      >Direct pitch launch</span
+                    >
+                  </div>
+                  <span
+                    class="font-telemetry-mono text-body-sm text-on-surface-variant"
+                  >
+                    Mechanical keyboards &amp; gamepads calibrated
+                  </span>
+                </div>
+              </div>
+            </div>
+            <!-- Editorial Horizontal Mechanics Bar (No floating cards, clean vertical dividing markers) -->
+            <div class="launch-mechanics mt-10 lg:mt-14 pt-6 border-none">
+              <div
+                class="w-full bg-surface-container-lowest/80 backdrop-blur-md rounded-sm p-4 lg:p-6 grid grid-cols-1 md:grid-cols-3 gap-6 relative"
+              >
+                <!-- Step 01 -->
+                <div
+                  class="flex flex-col gap-1 pr-4 md:border-r border-outline-variant/40"
+                >
+                  <div class="flex items-baseline gap-2">
+                    <span
+                      class="font-scorebug-num text-headline-md text-primary font-extrabold leading-none"
+                      >01</span
+                    >
+                    <span
+                      class="font-label-caps text-label-caps uppercase text-on-surface tracking-wider font-bold"
+                      >WATCH RUN-UP</span
+                    >
+                  </div>
+                  <p
+                    class="font-body-md text-body-md text-on-surface-variant leading-snug"
+                  >
+                    Track bowler trajectory, seam orientation, and pitch marker
+                    bounce angles in real-time 3D.
+                  </p>
+                </div>
+                <!-- Step 02 -->
+                <div
+                  class="flex flex-col gap-1 pr-4 md:border-r border-outline-variant/40"
+                >
+                  <div class="flex items-baseline gap-2">
+                    <span
+                      class="font-scorebug-num text-headline-md text-secondary font-extrabold leading-none"
+                      >02</span
+                    >
+                    <span
+                      class="font-label-caps text-label-caps uppercase text-on-surface tracking-wider font-bold"
+                      >CALL YOUR SHOT</span
+                    >
+                  </div>
+                  <p
+                    class="font-body-md text-body-md text-on-surface-variant leading-snug"
+                  >
+                    Type incoming delivery callouts ("COVER DRIVE", "HOOK",
+                    "PULL") during approach momentum.
+                  </p>
+                </div>
+                <!-- Step 03 -->
+                <div class="flex flex-col gap-1">
+                  <div class="flex items-baseline gap-2">
+                    <span
+                      class="font-scorebug-num text-headline-md text-tertiary font-extrabold leading-none"
+                      >03</span
+                    >
+                    <span
+                      class="font-label-caps text-label-caps uppercase text-on-surface tracking-wider font-bold"
+                      >TIME YOUR SWING</span
+                    >
+                  </div>
+                  <p
+                    class="font-body-md text-body-md text-on-surface-variant leading-snug"
+                  >
+                    Tap
+                    <kbd
+                      class="px-1.5 py-0.5 bg-surface-container text-on-surface rounded-sm text-body-sm font-telemetry-mono"
+                      >SPACE</kbd
+                    >
+                    or
+                    <kbd
+                      class="px-1.5 py-0.5 bg-surface-container text-on-surface rounded-sm text-body-sm font-telemetry-mono"
+                      >ENTER</kbd
+                    >
+                    precisely in the impact zone for maximum loft and sixes.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Launch Confirmation Flash Modal -->
+          <div
+            class="hidden absolute inset-0 z-50 bg-surface-container-lowest/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in"
+            id="match-loading-overlay"
+          >
+            <div
+              class="w-16 h-16 relative flex items-center justify-center mb-6"
+            >
+              <div
+                class="absolute inset-0 rounded-xl border-2 border-primary/20 animate-ping"
+              ></div>
+              <div
+                class="w-12 h-12 rounded-xl border-2 border-t-primary border-r-transparent border-b-primary border-l-transparent animate-spin"
+              ></div>
+              <span
+                class="material-symbols-outlined text-primary text-2xl absolute"
+                >sports_cricket</span
+              >
+            </div>
+            <span
+              class="font-label-caps text-label-caps uppercase tracking-widest text-secondary font-bold mb-1"
+              >STADIUM CALIBRATION</span
+            >
+            <h2
+              class="font-display-xl text-display-xl text-on-surface uppercase font-extrabold tracking-tight"
+            >
+              WALKING OUT TO THE CREASE
+            </h2>
+            <p
+              class="font-telemetry-mono text-body-lg text-primary mt-2"
+              id="loading-config-details"
+            >
+              CLUB DIFFICULTY • 5 OVERS INNINGS • THE OVAL
+            </p>
+            <!-- Synthetic Telemetry Pipeline Bar -->
+            <div
+              class="w-64 h-1.5 bg-surface-container-high rounded-xl overflow-hidden mt-6"
+            >
+              <div class="h-full bg-primary animate-pulse w-3/4"></div>
+            </div>
+            <span class="font-telemetry-mono text-body-sm text-outline mt-3"
+              >SYNCING HIGH-SPEED BOWLER ENGINE...</span
+            >
+          </div>
+        </div>
+      </main>
+      <footer class="w-full bg-surface-container-lowest/80">
+        <div
+          class="w-full px-margin-mobile lg:px-margin-desktop py-space-md flex flex-col md:flex-row items-center justify-between gap-space-sm"
+        >
+          <div class="flex items-center gap-space-md">
+            <span
+              class="font-telemetry-mono text-body-sm text-on-surface-variant"
+              >FLOODLIGHT ATMOSPHERE ENGINE ACTIVE</span
+            ><span class="font-telemetry-mono text-body-sm text-outline">|</span
+            ><span
+              class="font-telemetry-mono text-body-sm text-on-surface-variant"
+              >60 FPS CALIBRATED</span
+            >
+          </div>
+          <div class="font-telemetry-mono text-body-sm text-outline">
+            © CRICKET TYPIST 3D ARCADE TELEMETRY
+          </div>
+        </div>
+      </footer>
+    </div>
