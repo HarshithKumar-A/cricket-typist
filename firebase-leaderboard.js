@@ -4,7 +4,13 @@ import { app, auth } from "./firebase-multiplayer.js";
 
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
-const entriesRef = collection(db, "leaderboards", "international_2_over", "entries");
+function getEntriesRef(difficulty, overs) {
+  const difficultyKey = { club: "practice", pro: "club", test: "international" }[difficulty];
+  if (!difficultyKey || ![2, 5, 10].includes(Number(overs))) {
+    throw new Error("Unsupported leaderboard format.");
+  }
+  return collection(db, "leaderboards", `${difficultyKey}_${overs}_over`, "entries");
+}
 
 export function observeLeaderboardAuth(callback) {
   return onAuthStateChanged(auth, callback);
@@ -26,7 +32,8 @@ export async function signOutLeaderboard() {
   await signOut(auth);
 }
 
-export function watchLeaderboard(callback, onError) {
+export function watchLeaderboard(difficulty, overs, callback, onError) {
+  const entriesRef = getEntriesRef(difficulty, overs);
   return onSnapshot(query(entriesRef, orderBy("score", "desc")), snapshot => {
     callback(snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() })));
   }, onError);
@@ -34,6 +41,7 @@ export function watchLeaderboard(callback, onError) {
 
 export async function saveLeaderboardPersonalBest(user, result) {
   if (!isPermanentAccount(user)) throw new Error("Sign in with Google to enter the leaderboard.");
+  const entriesRef = getEntriesRef(result.difficulty, result.overs);
   const entryRef = doc(entriesRef, user.uid);
   await runTransaction(db, async transaction => {
     const current = await transaction.get(entryRef);

@@ -1,6 +1,8 @@
 import { createRoom, joinRoom, watchRoom, submitBall, finishPlayer, deleteRoom } from "./firebase-multiplayer.js";
 import { getLeaderboardUser, isPermanentAccount, observeLeaderboardAuth, saveLeaderboardPersonalBest, signInForLeaderboard, signOutLeaderboard, watchLeaderboard } from "./firebase-leaderboard.js";
 
+const LEADERBOARD_DIFFICULTY_NAMES = { club: "NET PRACTICE", pro: "CLUB MATCH", test: "INTERNATIONAL" };
+
 function initLeaderboardPanel() {
   const authButton = document.getElementById("leaderboard-auth-button");
   const accountLabel = document.getElementById("leaderboard-account-label");
@@ -9,10 +11,32 @@ function initLeaderboardPanel() {
   if (!authButton || !accountLabel || !message || !entries) return;
 
   let stopWatchingEntries = null;
+  let selectedLeaderboardOvers = 2;
+  let selectedLeaderboardDifficulty = "test";
+  window.addEventListener("leaderboard-format-change", event => {
+    selectedLeaderboardDifficulty = event.detail.difficulty;
+    selectedLeaderboardOvers = event.detail.overs;
+    watchSelectedBoard();
+  });
+  const watchSelectedBoard = () => {
+    if (stopWatchingEntries) stopWatchingEntries();
+    stopWatchingEntries = null;
+    entries.replaceChildren();
+    const difficultyName = LEADERBOARD_DIFFICULTY_NAMES[selectedLeaderboardDifficulty];
+    document.getElementById("leaderboard-title").textContent = `${selectedLeaderboardOvers} OVER ${difficultyName} LEADERBOARD`;
+    document.querySelector(".leaderboard-kicker").textContent = `SOLO PLAY • ${difficultyName}`;
+    entries.setAttribute("aria-label", `${difficultyName} ${selectedLeaderboardOvers} over scores`);
+    if (!isPermanentAccount(getLeaderboardUser())) return;
+    message.textContent = "Loading leaderboard…";
+    stopWatchingEntries = watchLeaderboard(selectedLeaderboardDifficulty, selectedLeaderboardOvers, renderEntries, error => {
+      console.error("Could not load leaderboard:", error);
+      message.textContent = "Could not load scores. Check Firestore setup and security rules.";
+    });
+  };
   const renderEntries = scores => {
     entries.replaceChildren();
     if (!scores.length) {
-      message.textContent = "No scores yet. Complete an International 2-over solo match to claim the first spot.";
+      message.textContent = `No scores yet. Complete a ${LEADERBOARD_DIFFICULTY_NAMES[selectedLeaderboardDifficulty]} ${selectedLeaderboardOvers}-over solo match to claim the first spot.`;
       return;
     }
     message.textContent = `${scores.length} player${scores.length === 1 ? "" : "s"} on the board`;
@@ -87,10 +111,7 @@ function initLeaderboardPanel() {
     accountLabel.textContent = user.displayName || user.email || "Signed in";
     authButton.textContent = "Sign out";
     message.textContent = "Loading leaderboard…";
-    stopWatchingEntries = watchLeaderboard(renderEntries, error => {
-      console.error("Could not load leaderboard:", error);
-      message.textContent = "Could not load scores. Check Firestore setup and security rules.";
-    });
+    watchSelectedBoard();
   });
 }
       /********************************************************************
@@ -3901,9 +3922,9 @@ function initLeaderboardPanel() {
           this.audio = new CricketAudioEngine();
           this.typing = new TypingEngine(this.audio);
 
-          this.difficulty = "easy";
-          this.launchDifficulty = "club";
-          this.maxOvers = 5;
+          this.difficulty = "hard";
+          this.launchDifficulty = "test";
+          this.maxOvers = 2;
           this.isLaunching = false;
           this.runs = 0;
           this.wickets = 0;
@@ -4037,6 +4058,9 @@ function initLeaderboardPanel() {
               selectSegment(diffButtons, btn);
               this.launchDifficulty = btn.dataset.value;
               this.difficulty = preset.engineKey;
+              window.dispatchEvent(new CustomEvent("leaderboard-format-change", {
+                detail: { difficulty: this.launchDifficulty, overs: this.maxOvers },
+              }));
               const caption = document.getElementById("diff-caption");
               caption.textContent = preset.note;
               const accents = { club: "#10b981", pro: "#06b6d4", test: "#f59e0b" };
@@ -4056,6 +4080,9 @@ function initLeaderboardPanel() {
               if (!note) return;
               selectSegment(oversButtons, btn);
               this.maxOvers = parseInt(btn.dataset.value, 10);
+              window.dispatchEvent(new CustomEvent("leaderboard-format-change", {
+                detail: { difficulty: this.launchDifficulty, overs: this.maxOvers },
+              }));
               const caption = document.getElementById("overs-caption");
               caption.textContent = note;
               caption.style.setProperty("--difficulty-accent", "#ffb95f");
@@ -4220,6 +4247,16 @@ function initLeaderboardPanel() {
               this.startNewMatch();
             });
 
+          document.getElementById("btn-target-continue").addEventListener("click", () => {
+            document.getElementById("target-choice-modal").classList.add("hidden");
+            this.continueAfterTarget = true;
+            this.prepareNextDelivery();
+          });
+          document.getElementById("btn-target-end").addEventListener("click", () => {
+            document.getElementById("target-choice-modal").classList.add("hidden");
+            this.showInningsSummary();
+          });
+
           document
             .getElementById("btn-summary-menu")
             .addEventListener("click", () => {
@@ -4300,7 +4337,7 @@ function initLeaderboardPanel() {
             });
 
           window.addEventListener("keydown", (e) => {
-            if (this.state === "MENU" || this.state === "INNINGS_OVER") return;
+            if (this.state === "MENU" || this.state === "INNINGS_OVER" || this.state === "TARGET_PROMPT") return;
 
             if (["1", "2", "3", "4", "5", "6"].includes(e.key)) {
               e.preventDefault();
@@ -4458,18 +4495,22 @@ function initLeaderboardPanel() {
 
         prepareNextDelivery() {
           const reachedTarget = !this.multiplayer && this.runs >= this.targetRuns;
-          const leaderboardMatch = this.launchDifficulty === "test" && this.maxOvers === 2;
+          const leaderboardMatch = ["club", "pro", "test"].includes(this.launchDifficulty) && [2, 5, 10].includes(this.maxOvers);
           if (
             reachedTarget &&
             leaderboardMatch &&
+            isPermanentAccount(getLeaderboardUser()) &&
             !this.continueAfterTarget &&
             !this.targetContinuationPrompted &&
             this.legalBalls < this.maxOvers * 6
           ) {
             this.targetContinuationPrompted = true;
-            this.continueAfterTarget = window.confirm(
-              "Target reached! Face the remaining balls to finish the full 2-over innings and compete on the leaderboard?"
-            );
+            document.getElementById("target-choice-title").textContent = "TARGET REACHED!";
+            document.getElementById("target-choice-copy").textContent =
+              `You have ${this.maxOvers * 6 - this.legalBalls} balls remaining. Continue to complete the full ${this.maxOvers}-over innings and post your score to the leaderboard?`;
+            document.getElementById("target-choice-modal").classList.remove("hidden");
+            this.state = "TARGET_PROMPT";
+            return;
           }
           if (
             (reachedTarget && !this.continueAfterTarget) ||
@@ -4826,14 +4867,16 @@ function initLeaderboardPanel() {
           document.getElementById("sum-streak").textContent =
             `${this.bestStreak}🔥`;
 
-          if (!this.multiplayer && this.launchDifficulty === "test" && this.maxOvers === 2) {
+          if (!this.multiplayer && ["club", "pro", "test"].includes(this.launchDifficulty) && [2, 5, 10].includes(this.maxOvers)) {
             const user = getLeaderboardUser();
             if (!isPermanentAccount(user)) {
               document.getElementById("leaderboard-message").textContent =
-                "Sign in with Google, then play an International 2-over solo match to enter.";
+                `Sign in with Google, then play a ${LEADERBOARD_DIFFICULTY_NAMES[this.launchDifficulty]} ${this.maxOvers}-over solo match to enter.`;
             } else {
               document.getElementById("leaderboard-message").textContent = "Saving your personal best…";
               saveLeaderboardPersonalBest(user, {
+                difficulty: this.launchDifficulty,
+                overs: this.maxOvers,
                 score: this.runs,
                 wickets: this.wickets,
                 accuracy: Number(this.typing.getMatchAverageAccuracy()),
@@ -4877,6 +4920,7 @@ function initLeaderboardPanel() {
             this.camera.lookAt(0, 1.2, 0);
             return;
           }
+          if (this.state === "TARGET_PROMPT") return;
 
           const runupDur =
             this.difficulty === "easy"
