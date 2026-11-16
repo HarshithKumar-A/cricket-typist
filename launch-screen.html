@@ -440,6 +440,21 @@
           </div>
         </div>
       </main>
+      <aside id="leaderboard-panel" class="leaderboard-panel" aria-labelledby="leaderboard-title">
+        <div class="leaderboard-heading">
+          <div>
+            <p class="leaderboard-kicker">SOLO PLAY • INTERNATIONAL</p>
+            <h2 id="leaderboard-title">2 OVER LEADERBOARD</h2>
+          </div>
+          <span class="material-symbols-outlined" aria-hidden="true">leaderboard</span>
+        </div>
+        <div class="leaderboard-account">
+          <span id="leaderboard-account-label" aria-live="polite">Sign in to view scores</span>
+          <button id="leaderboard-auth-button" type="button">Continue with Google</button>
+        </div>
+        <p id="leaderboard-message" class="leaderboard-message" aria-live="polite">Only signed-in players can view the board.</p>
+        <ol id="leaderboard-entries" class="leaderboard-entries" aria-label="International 2 over scores"></ol>
+      </aside>
       <footer class="w-full bg-surface-container-lowest/80">
         <div
           class="w-full px-margin-mobile lg:px-margin-desktop py-space-md flex flex-col md:flex-row items-center justify-between gap-space-sm"

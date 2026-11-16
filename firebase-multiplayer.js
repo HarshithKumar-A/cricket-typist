@@ -11,8 +11,8 @@ const firebaseConfig = {
   messagingSenderId: "1071431654879",
   appId: "1:1071431654879:web:cb04dbf980f72aa5f3786a",
 };
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
 const db = getDatabase(app);
 
 export async function ensurePlayer() {

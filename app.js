@@ -1,4 +1,98 @@
 import { createRoom, joinRoom, watchRoom, submitBall, finishPlayer, deleteRoom } from "./firebase-multiplayer.js";
+import { getLeaderboardUser, isPermanentAccount, observeLeaderboardAuth, saveLeaderboardPersonalBest, signInForLeaderboard, signOutLeaderboard, watchLeaderboard } from "./firebase-leaderboard.js";
+
+function initLeaderboardPanel() {
+  const authButton = document.getElementById("leaderboard-auth-button");
+  const accountLabel = document.getElementById("leaderboard-account-label");
+  const message = document.getElementById("leaderboard-message");
+  const entries = document.getElementById("leaderboard-entries");
+  if (!authButton || !accountLabel || !message || !entries) return;
+
+  let stopWatchingEntries = null;
+  const renderEntries = scores => {
+    entries.replaceChildren();
+    if (!scores.length) {
+      message.textContent = "No scores yet. Complete an International 2-over solo match to claim the first spot.";
+      return;
+    }
+    message.textContent = `${scores.length} player${scores.length === 1 ? "" : "s"} on the board`;
+    scores.forEach((score, index) => {
+      const row = document.createElement("li");
+      row.className = "leaderboard-entry";
+      const rank = document.createElement("span");
+      rank.className = "leaderboard-rank";
+      rank.textContent = String(index + 1).padStart(2, "0");
+      const identity = document.createElement("div");
+      identity.className = "leaderboard-identity";
+      const avatar = document.createElement(score.photoURL ? "img" : "span");
+      avatar.className = score.photoURL
+        ? "leaderboard-avatar"
+        : "leaderboard-avatar leaderboard-avatar-fallback";
+      if (score.photoURL) {
+        avatar.src = score.photoURL;
+        avatar.alt = `${score.displayName || "Player"} profile`;
+        avatar.referrerPolicy = "no-referrer";
+        avatar.onerror = () => {
+          avatar.replaceWith(Object.assign(document.createElement("span"), {
+            className: "leaderboard-avatar leaderboard-avatar-fallback",
+            textContent: (score.displayName || "P").trim().charAt(0).toUpperCase(),
+            "aria-label": "Player avatar",
+          }));
+        };
+      } else {
+        avatar.textContent = (score.displayName || "P").trim().charAt(0).toUpperCase();
+        avatar.setAttribute("aria-label", "Player avatar");
+      }
+      const playerDetails = document.createElement("div");
+      playerDetails.className = "leaderboard-player-wrap";
+      const name = document.createElement("div");
+      name.className = "leaderboard-player";
+      name.textContent = score.displayName || "Cricket Player";
+      const detail = document.createElement("div");
+      detail.className = "leaderboard-detail";
+      detail.textContent = `${score.wickets ?? 0} wickets • ${Math.round(score.accuracy ?? 0)}% accuracy`;
+      playerDetails.append(name, detail);
+      identity.append(avatar, playerDetails);
+      const runs = document.createElement("span");
+      runs.className = "leaderboard-score";
+      runs.textContent = `${score.score ?? 0}/${score.wickets ?? 0}`;
+      row.append(rank, identity, runs);
+      entries.append(row);
+    });
+  };
+
+  authButton.addEventListener("click", async () => {
+    authButton.disabled = true;
+    try {
+      if (isPermanentAccount(getLeaderboardUser())) await signOutLeaderboard();
+      else await signInForLeaderboard();
+    } catch (error) {
+      message.textContent = error.code === "auth/unauthorized-domain"
+        ? "Add this site domain under Firebase Authentication → Settings → Authorized domains."
+        : `Sign-in failed: ${error.message || "Please try again."}`;
+    } finally {
+      authButton.disabled = false;
+    }
+  });
+
+  observeLeaderboardAuth(user => {
+    if (stopWatchingEntries) stopWatchingEntries();
+    entries.replaceChildren();
+    if (!isPermanentAccount(user)) {
+      accountLabel.textContent = "Sign in to view scores";
+      authButton.textContent = "Continue with Google";
+      message.textContent = "Only signed-in players can view the board.";
+      return;
+    }
+    accountLabel.textContent = user.displayName || user.email || "Signed in";
+    authButton.textContent = "Sign out";
+    message.textContent = "Loading leaderboard…";
+    stopWatchingEntries = watchLeaderboard(renderEntries, error => {
+      console.error("Could not load leaderboard:", error);
+      message.textContent = "Could not load scores. Check Firestore setup and security rules.";
+    });
+  });
+}
       /********************************************************************
        * 1. WEB AUDIO SYNTHESIZER MODULE
        * Generates realistic procedural cricket sound effects & ambience
@@ -4713,6 +4807,30 @@ import { createRoom, joinRoom, watchRoom, submitBall, finishPlayer, deleteRoom }
             `${this.foursCount} / ${this.sixesCount}`;
           document.getElementById("sum-streak").textContent =
             `${this.bestStreak}🔥`;
+
+          if (!this.multiplayer && this.launchDifficulty === "test" && this.maxOvers === 2) {
+            const user = getLeaderboardUser();
+            if (!isPermanentAccount(user)) {
+              document.getElementById("leaderboard-message").textContent =
+                "Sign in with Google, then play an International 2-over solo match to enter.";
+            } else {
+              document.getElementById("leaderboard-message").textContent = "Saving your personal best…";
+              saveLeaderboardPersonalBest(user, {
+                score: this.runs,
+                wickets: this.wickets,
+                accuracy: Number(this.typing.getMatchAverageAccuracy()),
+                wpm: Number(this.typing.getMatchAverageWPM()),
+                fours: this.foursCount,
+                sixes: this.sixesCount,
+              }).then(() => {
+                document.getElementById("leaderboard-message").textContent = "Your personal best is up to date.";
+              }).catch(error => {
+                console.error("Could not save leaderboard score:", error);
+                document.getElementById("leaderboard-message").textContent =
+                  "Could not save your score. Check Firestore setup and rules.";
+              });
+            }
+          }
         }
 
         updateGameplay(dt) {
@@ -4969,7 +5087,7 @@ import { createRoom, joinRoom, watchRoom, submitBall, finishPlayer, deleteRoom }
                         ? 2
                         : 3;
                 if (powerRatio <= 0.15) runsScored = 0;
-                else if (powerRatio < 0.5) runsScored = Math.min(2, runsScored);
+                else if (powerRatio < 0.45) runsScored = Math.min(2, runsScored);
 
                 const title =
                   runsScored === 0
@@ -5013,10 +5131,11 @@ import { createRoom, joinRoom, watchRoom, submitBall, finishPlayer, deleteRoom }
                   "bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 border-emerald-200",
                 );
               } else {
+                const boundaryRuns = powerRatio >= 0.45 ? 3 : 2;
                 this.resolveDeliveryOutcome(
-                  "2 RUNS SCORED!",
-                  `Plugged in the deep outfield (${Math.round(powerRatio * 100)}% Power — 50%+ needed for 4s)`,
-                  2,
+                  `${boundaryRuns} RUNS SCORED!`,
+                  `Plugged in the deep outfield (${Math.round(powerRatio * 100)}% Power)`,
+                  boundaryRuns,
                   false,
                   "bg-cyan-600/95 text-white border-cyan-300",
                 );
@@ -5036,7 +5155,7 @@ import { createRoom, joinRoom, watchRoom, submitBall, finishPlayer, deleteRoom }
                       ? 2
                       : 3;
               if (powerRatio <= 0.15) runsScored = 0;
-              else if (powerRatio < 0.5) runsScored = Math.min(2, runsScored);
+              else if (powerRatio < 0.45) runsScored = Math.min(2, runsScored);
 
               const title =
                 runsScored === 0
@@ -5090,6 +5209,7 @@ import { createRoom, joinRoom, watchRoom, submitBall, finishPlayer, deleteRoom }
           }
           const launchMarkup = await response.text();
           document.getElementById("launch-screen-slot").innerHTML = launchMarkup;
+          initLeaderboardPanel();
           window.cricketGame = new TypingCricketGame();
         } catch (error) {
           console.error("Unable to initialize the launch screen:", error);
