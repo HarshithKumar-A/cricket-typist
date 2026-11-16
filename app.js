@@ -3910,6 +3910,8 @@ function initLeaderboardPanel() {
           this.maxWickets = 10;
           this.legalBalls = 0;
           this.targetRuns = 28;
+          this.continueAfterTarget = false;
+          this.targetContinuationPrompted = false;
           this.streak = 0;
           this.bestStreak = 0;
           this.foursCount = 0;
@@ -4433,6 +4435,8 @@ function initLeaderboardPanel() {
           this.runs = 0;
           this.wickets = 0;
           this.legalBalls = 0;
+          this.continueAfterTarget = false;
+          this.targetContinuationPrompted = false;
           this.streak = 0;
           this.bestStreak = 0;
           this.foursCount = 0;
@@ -4453,8 +4457,22 @@ function initLeaderboardPanel() {
         }
 
         prepareNextDelivery() {
+          const reachedTarget = !this.multiplayer && this.runs >= this.targetRuns;
+          const leaderboardMatch = this.launchDifficulty === "test" && this.maxOvers === 2;
           if (
-            (!this.multiplayer && this.runs >= this.targetRuns) ||
+            reachedTarget &&
+            leaderboardMatch &&
+            !this.continueAfterTarget &&
+            !this.targetContinuationPrompted &&
+            this.legalBalls < this.maxOvers * 6
+          ) {
+            this.targetContinuationPrompted = true;
+            this.continueAfterTarget = window.confirm(
+              "Target reached! Face the remaining balls to finish the full 2-over innings and compete on the leaderboard?"
+            );
+          }
+          if (
+            (reachedTarget && !this.continueAfterTarget) ||
             this.wickets >= this.maxWickets ||
             this.legalBalls >= this.maxOvers * 6
           ) {
