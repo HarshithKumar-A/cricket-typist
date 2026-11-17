@@ -414,6 +414,24 @@ function initLeaderboardPanel() {
           this.pauseBarWrapEl = document.getElementById("pause-progress-wrap");
           this.pauseBarEl = document.getElementById("pause-progress-bar");
           this.instrLeftEl = document.getElementById("typing-instruction-left");
+          this.lowercasePrompt = localStorage.getItem("typingPromptLowercase") === "true";
+          this.caseToggleEl = document.getElementById("typing-case-toggle");
+          if (this.caseToggleEl) {
+            this.caseToggleEl.addEventListener("click", () => {
+              this.lowercasePrompt = !this.lowercasePrompt;
+              localStorage.setItem("typingPromptLowercase", String(this.lowercasePrompt));
+              this.updateCaseToggle();
+              this.renderSentence();
+            });
+            this.updateCaseToggle();
+          }
+        }
+
+        updateCaseToggle() {
+          if (!this.caseToggleEl) return;
+          this.caseToggleEl.textContent = this.lowercasePrompt ? "Aa: lower" : "Aa: CAPS";
+          this.caseToggleEl.setAttribute("aria-pressed", String(this.lowercasePrompt));
+          this.caseToggleEl.title = this.lowercasePrompt ? "Show typing prompt in uppercase" : "Show typing prompt in lowercase";
         }
 
         resetMatchStats() {
@@ -534,7 +552,7 @@ function initLeaderboardPanel() {
           this.totalKeystrokes++;
           this.matchTotalChars++;
 
-          if (typedChar === expectedChar) {
+          if (typedChar === expectedChar.toUpperCase()) {
             this.cursor++;
             this.matchCorrectChars++;
             this.hasErrorOnCurrentChar = false;
@@ -616,16 +634,17 @@ function initLeaderboardPanel() {
           let html = "";
           for (let i = 0; i < this.sentence.length; i++) {
             const char = this.sentence[i];
+            const displayChar = this.lowercasePrompt ? char.toLowerCase() : char;
             if (i < this.cursor) {
-              html += `<span class="char-correct">${char === " " ? "&nbsp;" : char}</span>`;
+              html += `<span class="char-correct">${displayChar === " " ? "&nbsp;" : displayChar}</span>`;
             } else if (i === this.cursor) {
               if (this.hasErrorOnCurrentChar) {
-                html += `<span class="char-error">${char === " " ? "&nbsp;" : char}</span>`;
+                html += `<span class="char-error">${displayChar === " " ? "&nbsp;" : displayChar}</span>`;
               } else {
-                html += `<span class="char-current">${char === " " ? "&nbsp;" : char}</span>`;
+                html += `<span class="char-current">${displayChar === " " ? "&nbsp;" : displayChar}</span>`;
               }
             } else {
-              html += `<span class="char-pending">${char === " " ? "&nbsp;" : char}</span>`;
+              html += `<span class="char-pending">${displayChar === " " ? "&nbsp;" : displayChar}</span>`;
             }
           }
           this.sentenceEl.innerHTML = html;
